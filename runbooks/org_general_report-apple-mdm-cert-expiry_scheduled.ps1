@@ -37,7 +37,7 @@ if ($applePushCerts) {
         "## -> $(((get-date -Date $ApplePushCert.expirationDateTime) - (get-date)).Days) days left."
         if (((get-date -Date $ApplePushCert.expirationDateTime) - $minDate) -le 0) {
             "## ALERT - Days left is below limit!"
-            $HTMLBody += "<p><b>Apple Push Certificate '$($ApplePushCert.appleIdentifier)' about to expire: $(((get-date -Date $ApplePushCert.expirationDateTime) - (get-date)).Days) left.</b></p>"
+            $HTMLBody += "<p><b>Apple Push Certificate '$($ApplePushCert.appleIdentifier)' about to expire: $(((get-date -Date $ApplePushCert.expirationDateTime) - (get-date)).Days) days left.</b></p>"
         }
         ""
     }
