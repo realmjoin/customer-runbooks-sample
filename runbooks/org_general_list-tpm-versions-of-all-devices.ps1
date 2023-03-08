@@ -16,7 +16,7 @@
 
 Connect-RjRbGraph 
 
-$devices = Invoke-RjRbRestMethodGraph -Resource "/deviceManagement/managedDevices" -OdSelect "id" -Beta
+$devices = Invoke-RjRbRestMethodGraph -Resource "/deviceManagement/managedDevices" -OdSelect "id" -Beta -FollowPaging
 
 "Device Name;Device ID;TPM Manufacturer;TPM Version;TPM Specification Version;system Management BIOS Version"
 
