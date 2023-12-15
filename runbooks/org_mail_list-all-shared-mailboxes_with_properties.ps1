@@ -12,15 +12,15 @@
 param (
   ## CallerName is tracked purely for auditing purposes
   [Parameter(Mandatory = $true)]
-  [TypeName] $CallerName
+  [String] $CallerName
 )
 
 Write-RjRbLog -Message "Caller: '$CallerName'" -Verbose
 
 try {
-  Connect-ExchangeOnline
+  Connect-RjRbExchangeOnline | Out-Null
 
-  Write-Host "## Grabbing all shared mailboxes..."
+  #Write-Host "## Grabbing all shared mailboxes..."
 
   $AllSharedMailboxes = @()
 
@@ -58,9 +58,11 @@ try {
     $CombinedProperties
   }
   ## Convert the array into a JSON
-  Write-Host "## Saving all data to a .json file..."
-  $AllSharedMailboxes | ConvertTo-JSON | Out-File -FilePath ".\AllSharedMailboxes.json"
-  Write-Host "## File saved under 'AllSharedMailboxes.json'. "
+  $AllSharedMailboxes | ConvertTo-JSON 
+  
+  #Write-Host "## Saving all data to a .json file..."
+  #$AllSharedMailboxes | ConvertTo-JSON | Out-File -FilePath ".\AllSharedMailboxes.json"
+  #Write-Host "## File saved under 'AllSharedMailboxes.json'. "
 }
 finally {
   Disconnect-ExchangeOnline -Confirm:$false -ErrorAction Continue | Out-Null
