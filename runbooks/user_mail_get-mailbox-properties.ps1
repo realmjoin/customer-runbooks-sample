@@ -27,7 +27,7 @@ try {
   $mailboxData = Get-EXOMailbox -Identity $Username -Properties DisplayName, UserPrincipalName, EmailAddresses, RecipientTypeDetails, PrimarySmtpAddress, ExchangeObjectId, WhenCreated, IsMailboxEnabled, DistinguishedName, OrganizationalUnit, ExchangeVersion
   $orgUnitRoot = Get-Mailbox -Identity $Username | Select-Object OrganizationalUnitRoot
 
-  if($null -eq $mailboxData || $null -eq $orgUnitRoot){
+  if(($null -eq $mailboxData) -or ($null -eq $orgUnitRoot)){
     throw "## Mailbox does not exist. Check spelling and try again."
   } 
 
