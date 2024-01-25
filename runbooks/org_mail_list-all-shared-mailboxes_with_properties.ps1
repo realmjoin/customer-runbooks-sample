@@ -22,41 +22,38 @@ try {
 
   #Write-Host "## Grabbing all shared mailboxes..."
 
-  $AllSharedMailboxes = @()
+  $AllSharedMailboxes = New-Object System.Collections.Generic.LinkedList[System.Object]
 
   ## Grab a list of all shared mailboxes with their UPN via Get-EXOMailbox 
-  $sharedMailboxes = Get-EXOMailbox -RecipientTypeDetails SharedMailbox -ResultSize unlimited | Select-Object  userPrincipalName
+  $sharedMailboxes = Get-EXOMailbox -RecipientTypeDetails SharedMailbox -ResultSize unlimited -Properties userPrincipalName | Select-Object  userPrincipalName
 
-  ## Go thru each mailbox and call Get-Mailbox and then Get-EXOMailbox to grab respective attributes in two separate PSObjects then slap them in one PSCustomObj
-  foreach ($sharedmailbox in $sharedMailboxes) {
+  $sharedMailboxes | ForEach-Object {
     ## grab the specific 5 attributes, for every shared mailbox, only available with the old cmdlet and save them in an array
     $MailboxProperties = Get-Mailbox -Identity $_.UserPrincipalName | Select-Object ExchangeObjectId, WhenCreated, IsMailboxEnabled, OrganizationalUnitRoot, OrganizationalUnit
     ## do the same but for the newer cmdlet
     $EXOMailboxProperties = Get-EXOMailbox -Identity $_.UserPrincipalName | Select-Object DisplayName, UserPrincipalName, EmailAddresses, RecipientTypeDetails, PrimarySmtpAddress, DistinguishedName, ExchangeVersion
-  }
 
-  ## in order to combine all of the attributes respectively for each mailbox do a simple index position array for loop 
-  $AllSharedMailboxes = for($i = 0; $i -lt $MailboxProperties.Count; $i++){
-    $obj1 = $MailboxProperties[$i]
-    $obj2 = $EXOMailboxProperties[$i]
-
-    $CombinedProperties = New-Object -TypeName PSObject -Property @{
-      ExchangeObjectId       = $obj1.ExchangeObjectId
-      WhenCreated            = $obj1.WhenCreated
-      IsMailboxEnabled       = $obj1.IsMailboxEnabled
-      OrganizationalUnitRoot = $obj1.OrganizationalUnitRoot
-      OrganizationalUnit     = $obj1.OrganizationalUnit
-      DisplayName            = $obj2.DisplayName
-      UserPrincipalName      = $obj2.UserPrincipalName
-      EmailAddresses         = $obj2.EmailAddresses
-      RecipientTypeDetails   = $obj2.RecipientTypeDetails
-      PrimarySmtpAddress     = $obj2.PrimarySmtpAddress
-      DistinguishedName      = $obj2.DistinguishedName
-      ExchangeVersion        = $obj2.ExchangeVersion
+    ## combine all of the attributes 
+    $obj = New-Object -TypeName PSObject -Property @{
+      ExchangeObjectId       = $MailboxProperties.ExchangeObjectId
+      WhenCreated            = $MailboxProperties.WhenCreated
+      IsMailboxEnabled       = $MailboxProperties.IsMailboxEnabled
+      OrganizationalUnitRoot = $MailboxProperties.OrganizationalUnitRoot
+      OrganizationalUnit     = $MailboxProperties.OrganizationalUnit
+      DisplayName            = $EXOMailboxProperties.DisplayName
+      UserPrincipalName      = $EXOMailboxProperties.UserPrincipalName
+      EmailAddresses         = $EXOMailboxProperties.EmailAddresses
+      RecipientTypeDetails   = $EXOMailboxProperties.RecipientTypeDetails
+      PrimarySmtpAddress     = $EXOMailboxProperties.PrimarySmtpAddress
+      DistinguishedName      = $EXOMailboxProperties.DistinguishedName
+      ExchangeVersion        = $EXOMailboxProperties.ExchangeVersion
     }
-
-    $CombinedProperties
+    $AllSharedMailboxes.Add(
+      $obj
+    )
   }
+
+
   ## Convert the array into a JSON
   $AllSharedMailboxes | ConvertTo-JSON 
   
