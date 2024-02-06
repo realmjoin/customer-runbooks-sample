@@ -13,9 +13,8 @@
 #Requires -Modules @{ModuleName = "RealmJoin.RunbookHelper"; ModuleVersion = "0.8.3" }, ExchangeOnlineManagement
 
 param(
-  # EntraID Group Object ID of exclusion group for Defender Compliance.
-  [Parameter(Mandatory = $true)]
-  [string]$exclusionGroupId,
+  # EntraID exclusion group for Defender Compliance.
+  [string]$exclusionGroupName = "cfg - Intune - Windows - Compliance for unenrolled Autopilot devices (devices)",
   [int] $maxAgeInDays = 10,
   # CallerName is tracked purely for auditing purposes
   [Parameter(Mandatory = $true)]
@@ -25,6 +24,23 @@ param(
 Connect-RjRbGraph
 
 Write-RjRbLog -Message "Caller: '$CallerName'" -Verbose
+
+$exclusionGroupId = (Invoke-RjRbRestMethodGraph -Resource "/groups" -OdFilter "displayName eq '$exclusionGroupName'").id
+if (-not $exclusionGroupId) {
+  "## Create the exclusion group"
+  $mailNickname = $exclusionGroupName.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "")
+  if ($mailNickname.Length -gt 50) {
+    $mailNickname = $mailNickname.Substring(0, 50)
+  }
+  $body = @{
+    displayName = $exclusionGroupName
+    mailEnabled = $false
+    mailNickname = $mailNickname
+    securityEnabled = $true
+  }
+  $group = Invoke-RjRbRestMethodGraph -Resource "/groups" -Method Post -Body $body
+  $exclusionGroupId = $group.id
+}
 
 $InGraceDevices = @()
 
