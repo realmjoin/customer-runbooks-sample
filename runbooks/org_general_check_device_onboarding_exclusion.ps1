@@ -40,41 +40,59 @@ if (-not $exclusionGroupId) {
   }
   $group = Invoke-RjRbRestMethodGraph -Resource "/groups" -Method Post -Body $body
   $exclusionGroupId = $group.id
+  "## Sleep for 10 seconds to allow the group to be created"
+  Start-Sleep -Seconds 10
 }
 
 $InGraceDevices = @()
 
 ## Get all Autopiolt Devices
-$APDevices = Invoke-RjRbRestMethodGraph -Resource "/deviceManagement/windowsAutopilotDeviceIdentities" -FollowPaging
+$APDevices = Invoke-RjRbRestMethodGraph -Resource "/deviceManagement/windowsAutopilotDeviceIdentities" -FollowPaging 
 
-## Search for the Autopilot Devices not yet present in Intune
+"## Search for the Autopilot Devices not yet present in Intune"
+$count = 0;
 $APDevices | Where-Object { $_.enrollmentState -ne "enrolled" } | ForEach-Object {
   $device = Invoke-RjRbRestMethodGraph -Resource "/devices" -OdFilter "deviceId eq '$($_.azureActiveDirectoryDeviceId)'"
   if ($device) {
     $InGraceDevices += $device
+    $count++;
   }
 }
-
-## Search for Intune devices younger than maxAgeInDays
+"## $count devices found."
+""
+"## Search for Intune devices younger than maxAgeInDays"
+$count = 0
 $intuneDevices = Invoke-RjRbRestMethodGraph -Resource "/deviceManagement/managedDevices" -FollowPaging
-$intuneDevices | Where-Object { ($_.enrolledDateTime -ge (Get-Date).AddDays(-$maxAgeInDays)) -and ($_.operatingSystem -eq "Windows") } | ForEach-Object {
+$intuneDevices | Where-Object { ((Get-date $_.enrolledDateTime) -ge (Get-Date).AddDays(-$maxAgeInDays)) -and ($_.operatingSystem -eq "Windows") } | ForEach-Object {
   $device = Invoke-RjRbRestMethodGraph -Resource "/devices" -OdFilter "deviceId eq '$($_.azureADDeviceId)'"
   if ($device) {
     $InGraceDevices += $device
+    #"$($device.displayName):$($_.enrolledDateTime)"
+    $count++;
   }
 }
+"## $count devices found."
+""
 
 ## Get current members of the exclusion group
 $exclusionGroupMembers = Invoke-RjRbRestMethodGraph -Resource "/groups/$exclusionGroupId/members" -FollowPaging
 
-## Remove members from the group that are not in the InGraceDevices list
+"## Remove members from the group that are not in the InGraceDevices list"
+$count = 0;
 $exclusionGroupMembers | Where-Object { $InGraceDevices.id -notcontains $_.id } | ForEach-Object {
-  Invoke-RjRbRestMethodGraph -Resource "/groups/$exclusionGroupId/members/$($_.id)/`$ref" -Method Delete
+  $deviceId = $_.id
+  $count++;
+  Invoke-RjRbRestMethodGraph -Resource "/groups/$exclusionGroupId/members/$($_.id)/`$ref" -Method Delete -ErrorAction SilentlyContinue | Out-Null
+  $exclusionGroupMembers = $exclusionGroupMembers | Where-Object { $_.id -ne $deviceId }
 }
-
-## Add members to the group that are in the InGraceDevices list and not yet members of the group
+"## $count devices removed."
+""
+"## Add members to the group that are in the InGraceDevices list and not yet members of the group"
+$count = 0;
 $InGraceDevices | Where-Object { $exclusionGroupMembers.id -notcontains $_.id } | ForEach-Object {
   $body = @{ "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$($_.id)" }
-  Invoke-RjRbRestMethodGraph -Resource "/groups/$exclusionGroupId/members/`$ref" -Method Post -Body $body
+  Invoke-RjRbRestMethodGraph -Resource "/groups/$exclusionGroupId/members/`$ref" -Method Post -Body $body -ErrorAction SilentlyContinue | Out-Null
+  $exclusionGroupMembers += $_
+  $count++;
 }
-
+"## $count devices added."
