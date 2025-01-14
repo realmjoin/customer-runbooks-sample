@@ -53,6 +53,7 @@ $allDevicesFromCSV = Import-Csv -Path "autopilot-devices.csv" -Delimiter ","
 
 ## Get all devices (OData query is not supported for this endpoint)
 $allDevices = Invoke-MgGraphRequestAll -Uri "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+$allDeviceInImport = Invoke-MgGraphRequestAll -Uri "https://graph.microsoft.com/v1.0/deviceManagement/importedWindowsAutopilotDeviceIdentities/"
 
 # Check and import each device
 foreach ($device in $allDevicesFromCSV) {
@@ -61,7 +62,7 @@ foreach ($device in $allDevicesFromCSV) {
     #$WindowsProductID = $device.'Windows Product ID'
 
     ## Check if the device is already imported
-    if (-not ($allDevices.serialNumber -contains $SerialNumber)) {
+    if ((-not ($allDevices.serialNumber -contains $SerialNumber)) -and (-not ($allDeviceInImport.serialNumber -contains $SerialNumber))) {
         "## Importing device $SerialNumber"
         $body = @{
             serialNumber       = $SerialNumber 
