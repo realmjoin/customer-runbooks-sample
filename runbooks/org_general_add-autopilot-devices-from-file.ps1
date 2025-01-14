@@ -44,6 +44,10 @@ function Invoke-MgGraphRequestAll {
 #Connect-MgGraph -Identity
 
 ## Read the CSV file
+if (Test-Path -Path "autopilot-devices.csv") {
+    "ERROR - File autopilot-devices.csv already exists. Please remove it first."
+    throw "File already exists."
+}
 Invoke-WebRequest -Uri $URL -OutFile "autopilot-devices.csv" 
 $allDevicesFromCSV = Import-Csv -Path "autopilot-devices.csv" -Delimiter ","
 
@@ -100,6 +104,8 @@ foreach ($device in $allDevicesFromCSV) {
     else {
         "## Device $SerialNumber is already imported."
     }
+
+    Remove-Item -Path "autopilot-devices.csv"
 
 }
 
