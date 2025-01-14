@@ -3,7 +3,7 @@
   Update all PAW Device's ExtensionAttributes.
 
   .DESCRIPTION
-  Fetches all AAD/Autopilot Devices and keeps their ExtensionAttributes up to datex.
+  Fetches all AAD/Autopilot Devices and keeps their ExtensionAttributes up to date.
 
   .NOTES
   Permissions: 
