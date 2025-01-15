@@ -18,9 +18,9 @@
 #Requires -Modules Microsoft.Graph.Authentication
 
 param(
-    # URL to the CSV file containing the devices
+    # Path to the CSV file containing the devices
     [Parameter(Mandatory = $true)]
-    [string] $URL,
+    [string] $FullPath,
     # Wait for the import to finish per device
     [bool] $Wait = $false
 )
@@ -44,12 +44,7 @@ function Invoke-MgGraphRequestAll {
 #Connect-MgGraph -Identity
 
 ## Read the CSV file
-if (Test-Path -Path "autopilot-devices.csv") {
-    "ERROR - File autopilot-devices.csv already exists. Please remove it first."
-    throw "File already exists."
-}
-Invoke-WebRequest -Uri $URL -OutFile "autopilot-devices.csv" 
-$allDevicesFromCSV = Import-Csv -Path "autopilot-devices.csv" -Delimiter ","
+$allDevicesFromCSV = Import-Csv -Path $FullPath -Delimiter ","
 
 ## Get all devices (OData query is not supported for this endpoint)
 $allDevices = Invoke-MgGraphRequestAll -Uri "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
