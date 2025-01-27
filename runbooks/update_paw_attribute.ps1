@@ -30,10 +30,10 @@ function Invoke-MgGraphRequestAll {
     return $results
 }
 
-Connect-MgGraph -Identity
+#Connect-MgGraph -Identity
 
 ## Get all Devices
-$allDevices = Invoke-MgGraphRequestAll -Uri "https://graph.microsoft.com/v1.0/devices"
+$allDevices = Invoke-MgGraphRequestAll -Uri "https://graph.microsoft.com/v1.0/devices?`$select=id,physicalIds,extensionAttributes,displayName"
 
 ## Search for the PAW Devices 
 foreach ($pawDevice in $allDevices) {
@@ -43,22 +43,27 @@ foreach ($pawDevice in $allDevices) {
         ## print check
         "Physical IDs found for PAW Device: " + $pawDevice.id + ", Display Name: " + $pawDevice.displayName
         
-        ## Create request body json
-        $body = @{
-            "extensionAttributes" = @{
-                "extensionAttribute1" = "PAW"
-            }
+        if ($pawDevice.extensionAttributes.extensionAttribute1 -eq "PAW") {
+            "## extensionAttribute1 of Device $($pawDevice.displayName) with the DeviceID $($pawDevice.id) is already set to PAW"
         }
+        else {
+            ## Create request body json
+            $body = @{
+                "extensionAttributes" = @{
+                    "extensionAttribute1" = "PAW"
+                }
+            }
         
-        ## Call Graph API with Patch command to update the extensionAttribute
-        Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/devices/$($pawDevice.id)" -Method PATCH -Body $body -ContentType "application/json"
+            ## Call Graph API with Patch command to update the extensionAttribute
+            Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/devices/$($pawDevice.id)" -Method PATCH -Body $body -ContentType "application/json"
 
-        ## Query Graph API to check if device's extensionAttribute has been set correctly
-        #$checkDevice = Invoke-RjRbRestMethodGraph -Resource "/devices/$($pawDevice.id)" -OdSelect "extensionAttributes" -Method Get
-        $checkDevice = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/devices/$($pawDevice.id)?`$select=extensionAttributes" -Method GET
+            ## Query Graph API to check if device's extensionAttribute has been set correctly
+            #$checkDevice = Invoke-RjRbRestMethodGraph -Resource "/devices/$($pawDevice.id)" -OdSelect "extensionAttributes" -Method Get
+            $checkDevice = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/devices/$($pawDevice.id)?`$select=extensionAttributes" -Method GET
         
-        ## Print to Terminal
-        "## extensionAttribute1 of Device $($pawDevice.displayName) with the DeviceID $($pawDevice.id) has been set to: "
-        $checkDevice.extensionAttributes.extensionAttribute1
+            ## Print to Terminal
+            "## extensionAttribute1 of Device $($pawDevice.displayName) with the DeviceID $($pawDevice.id) has been set to: "
+            $checkDevice.extensionAttributes.extensionAttribute1
+        }
     }
 }
