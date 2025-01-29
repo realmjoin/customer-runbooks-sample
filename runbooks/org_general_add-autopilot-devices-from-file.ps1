@@ -101,8 +101,6 @@ foreach ($device in $allDevicesFromCSV) {
         "## Device $SerialNumber is already imported."
     }
 
-    Remove-Item -Path "autopilot-devices.csv"
-
 }
 
 
